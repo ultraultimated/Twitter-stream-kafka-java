@@ -38,12 +38,11 @@
             <artifactId>jackson-databind</artifactId>
             <version>2.11.2</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/com.twitter/hbc -->
+        <!-- https://mvnrepository.com/artifact/com.twitter/hbc-core -->
         <dependency>
             <groupId>com.twitter</groupId>
-            <artifactId>hbc</artifactId>
-            <version>2.2.0</version>
-            <type>pom</type>
+            <artifactId>hbc-core</artifactId> <!-- or hbc-twitter4j -->
+            <version>2.2.0</version> <!-- or whatever the latest version is -->
         </dependency>
     </dependencies>
 
