@@ -11,15 +11,19 @@ import com.twitter.hbc.core.endpoint.StatusesFilterEndpoint;
 import com.twitter.hbc.core.processor.StringDelimitedProcessor;
 import com.twitter.hbc.httpclient.auth.Authentication;
 import com.twitter.hbc.httpclient.auth.OAuth1;
+import org.apache.kafka.clients.producer.*;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 public class TwitterSetUp implements TwitterProperties {
+    private static final String BOOTSTRAP_SEVER_CONFIG = "127.0.0.1:9092";
     public TwitterSetUp() {
     }
 
@@ -35,9 +39,21 @@ public class TwitterSetUp implements TwitterProperties {
         Client client = createTwitterClient(msgQueue, logger);
         client.connect();
 
+        // Create kafka producer
+        KafkaProducer<String, String> kafkaProducer = createKafkaProducer();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            logger.info("stopping application...");
+            logger.info("Shutting down client for Twitter...");
+            client.stop();
+            logger.info("Shutting down producer");
+            kafkaProducer.close();
+            logger.info("Done!");
+
+        }));
         // Dump data to console
         while (!client.isDone()) {
             String msg = null;
+
             try {
                 msg = msgQueue.poll(2, TimeUnit.MINUTES);
             } catch (InterruptedException e) {
@@ -46,6 +62,15 @@ public class TwitterSetUp implements TwitterProperties {
             }
             if (msg != null) {
                 logger.info(msg);
+                kafkaProducer.send(new ProducerRecord<>("tweets", null, msg), new Callback() {
+                    @Override
+                    public void onCompletion(RecordMetadata recordMetadata, Exception e) {
+                        if (e != null) {
+                            logger.error("Something bad happened", e);
+                        }
+                    }
+                });
+
             }
         }
     }
@@ -65,6 +90,15 @@ public class TwitterSetUp implements TwitterProperties {
 
         return builder.build();
 
+    }
+
+    public KafkaProducer<String, String> createKafkaProducer() {
+        Properties properties = new Properties();
+        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SEVER_CONFIG);
+        properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        KafkaProducer<String, String> kafkaProducer = new KafkaProducer<String, String>(properties);
+        return kafkaProducer;
     }
 
 }
