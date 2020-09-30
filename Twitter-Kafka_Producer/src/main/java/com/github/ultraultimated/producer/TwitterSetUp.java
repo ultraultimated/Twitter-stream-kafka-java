@@ -1,4 +1,4 @@
-package com.github.ultraultimated.twitter;
+package com.github.ultraultimated.producer;
 
 
 import com.google.common.collect.Lists;
@@ -78,7 +78,7 @@ public class TwitterSetUp implements TwitterProperties {
     public Client createTwitterClient(BlockingQueue<String> msgQueue, Logger logger) {
         Hosts hosts = new HttpHosts(Constants.STREAM_HOST);
         StatusesFilterEndpoint endpoint = new StatusesFilterEndpoint();
-        List<String> terms = Lists.newArrayList("Manchester ");
+        List<String> terms = Lists.newArrayList("manutd", "soccer", "premier league", "ole", "martial");
         endpoint.trackTerms(terms);
         Authentication auth = new OAuth1(consumerKey, consumerSecret, token, secret);
         ClientBuilder builder = new ClientBuilder()
@@ -104,6 +104,11 @@ public class TwitterSetUp implements TwitterProperties {
         properties.setProperty(ProducerConfig.RETRIES_CONFIG, Integer.toString(Integer.MAX_VALUE));
         properties.setProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "5");
         properties.setProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, Integer.toString(2));
+
+        //create High throughput Producer
+        properties.setProperty(ProducerConfig.BATCH_SIZE_CONFIG, Integer.toString(32 * 1024));
+        properties.setProperty(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
+        properties.setProperty(ProducerConfig.LINGER_MS_CONFIG, "20");
 
         KafkaProducer<String, String> kafkaProducer = new KafkaProducer<String, String>(properties);
         return kafkaProducer;

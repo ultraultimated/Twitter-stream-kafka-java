@@ -23,4 +23,5 @@
 hs_err_pid*
 */twitter.properties
 
-/src/main/java/com/github/ultraultimated/twitter/TwitterProperties.java
+*/TwitterProperties.java
+*/ElasticsearchProperties.java
